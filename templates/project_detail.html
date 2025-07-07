@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}AskMe - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-folder-open"></i> {{ project.name }}</h1>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Projects
+            </a>
+        </div>
+        
+        <div class="row">
+            <!-- Project Info & Submit Request -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Project Information</h5>
+                        <p class="card-text">{{ project.description or 'No description available for this project.' }}</p>
+                        <small class="text-muted">Created: {{ project.created_at.split(' ')[0] }}</small>
+                    </div>
+                </div>
+                
+                <!-- Submit Request Form -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-plus-circle"></i> Submit New Request</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('create_request', project_id=project.id) }}">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Request Title</label>
+                                <input type="text" class="form-control" id="title" name="title" required 
+                                       placeholder="Brief description of your request">
+                            </div>
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="4" 
+                                          placeholder="Detailed description of your request, bug report, or feature suggestion"></textarea>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i> Submit Request
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Info & Stats -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-user"></i> Your Information</h5>
+                        <p class="card-text">
+                            <strong>Username:</strong> {{ username }}<br>
+                            <small class="text-muted">Auto-generated from your IP address</small>
+                        </p>
+                        <p class="card-text">
+                            <strong>Total Requests:</strong> {{ user_requests|length }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User's Requests -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> Your Requests</h5>
+            </div>
+            <div class="card-body">
+                {% if user_requests %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Tags</th>
+                                    <th>Submitted</th>
+                                    <th>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for request in user_requests %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ request.title }}</strong>
+                                        {% if request.description %}
+                                            <br><small class="text-muted">{{ request.description[:100] }}{% if request.description|length > 100 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if request.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif request.status == 'approved' %}
+                                            <span class="badge bg-success">Approved</span>
+                                        {% elif request.status == 'rejected' %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% elif request.status == 'completed' %}
+                                            <span class="badge bg-info">Completed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if request.tags %}
+                                            {% for tag in request.tags.split(',') %}
+                                                <span class="badge bg-secondary me-1">{{ tag.strip() }}</span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ request.created_at.split(' ')[0] }}</td>
+                                    <td>{{ request.updated_at.split(' ')[0] }}</td>
+                                </tr>
+                                {% if request.admin_response %}
+                                <tr>
+                                    <td colspan="5" class="bg-light">
+                                        <div class="p-2">
+                                            <strong><i class="fas fa-reply"></i> Admin Response:</strong><br>
+                                            {{ request.admin_response }}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i> You haven't submitted any requests yet. Use the form above to submit your first request!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
