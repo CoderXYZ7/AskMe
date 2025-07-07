@@ -60,7 +60,7 @@
                             <small class="text-muted">Auto-generated from your IP address</small>
                         </p>
                         <p class="card-text">
-                            <strong>Total Requests:</strong> {{ user_requests|length }}
+                            <strong>Total Requests:</strong> {{ requests_with_messages|length }}
                         </p>
                     </div>
                 </div>
@@ -73,64 +73,65 @@
                 <h5><i class="fas fa-list"></i> Your Requests</h5>
             </div>
             <div class="card-body">
-                {% if user_requests %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Status</th>
-                                    <th>Tags</th>
-                                    <th>Submitted</th>
-                                    <th>Last Updated</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for request in user_requests %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ request.title }}</strong>
-                                        {% if request.description %}
-                                            <br><small class="text-muted">{{ request.description[:100] }}{% if request.description|length > 100 %}...{% endif %}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if request.status == 'pending' %}
-                                            <span class="badge bg-warning">Pending</span>
-                                        {% elif request.status == 'approved' %}
-                                            <span class="badge bg-success">Approved</span>
-                                        {% elif request.status == 'rejected' %}
-                                            <span class="badge bg-danger">Rejected</span>
-                                        {% elif request.status == 'completed' %}
-                                            <span class="badge bg-info">Completed</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if request.tags %}
-                                            {% for tag in request.tags.split(',') %}
-                                                <span class="badge bg-secondary me-1">{{ tag.strip() }}</span>
-                                            {% endfor %}
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ request.created_at.split(' ')[0] }}</td>
-                                    <td>{{ request.updated_at.split(' ')[0] }}</td>
-                                </tr>
-                                {% if request.admin_response %}
-                                <tr>
-                                    <td colspan="5" class="bg-light">
-                                        <div class="p-2">
-                                            <strong><i class="fas fa-reply"></i> Admin Response:</strong><br>
-                                            {{ request.admin_response }}
+                {% if requests_with_messages %}
+                    {% for request_data in requests_with_messages %}
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-comment"></i> {{ request_data.request.title }}
+                                </h6>
+                                <div>
+                                    {% if request_data.request.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif request_data.request.status == 'approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% elif request_data.request.status == 'rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% elif request_data.request.status == 'completed' %}
+                                        <span class="badge bg-info">Completed</span>
+                                    {% endif %}
+                                    {% if request_data.request.tags %}
+                                        {% for tag in request_data.request.tags.split(',') %}
+                                            <span class="badge bg-secondary ms-1">{{ tag.strip() }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Description:</strong> {{ request_data.request.description or 'No description provided' }}</p>
+                            <p><small class="text-muted">Submitted: {{ request_data.request.created_at }}</small></p>
+                            
+                            <!-- Chat Messages -->
+                            <div class="chat-container mb-3" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 0.75rem; background-color: #f8f9fa;">
+                                {% if request_data.messages %}
+                                    {% for message in request_data.messages %}
+                                    <div class="message mb-2 {% if message.sender_type == 'admin' %}text-end{% endif %}">
+                                        <div class="d-inline-block p-2 rounded {% if message.sender_type == 'admin' %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 70%;">
+                                            <strong>{{ message.sender_name }}:</strong><br>
+                                            {{ message.message }}
+                                            <br><small class="{% if message.sender_type == 'admin' %}text-light{% else %}text-muted{% endif %}">{{ message.created_at }}</small>
                                         </div>
-                                    </td>
-                                </tr>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-muted text-center">No messages yet. Start the conversation!</p>
                                 {% endif %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                            </div>
+                            
+                            <!-- User Reply Form -->
+                            <form method="POST" action="{{ url_for('add_message', request_id=request_data.request.id) }}">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="message" placeholder="Type your message..." required>
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        <i class="fas fa-paper-plane"></i> Send
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
+                    {% endfor %}
                 {% else %}
                     <div class="alert alert-info" role="alert">
                         <i class="fas fa-info-circle"></i> You haven't submitted any requests yet. Use the form above to submit your first request!
